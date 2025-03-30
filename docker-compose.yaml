@@ -1,0 +1,63 @@
+version: '3.1'
+
+services:
+
+  #DATABASE
+  database:
+    mem_limit: 2048m
+    image: mariadb:10.6.4-focal
+    restart: unless-stopped
+    ports:
+      - 3307:3307
+    env_file: .env 
+    environment:
+      MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD}'
+      MYSQL_DATABASE: '${MYSQL_DATABASE}'
+      MYSQL_USER: '${MYSQL_USER}'
+      MYSQL_PASSWORD: '${MYSQL_PASSWORD}'
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - wordpress-networks
+
+  #PHPMYADMIN
+  phpmyadmin:
+    depends_on:
+      - database 
+    image: phpmyadmin/phpmyadmin
+    restart: unless-stopped  
+    ports:
+      - 8081:80
+    env_file: .env
+    environment:
+      PMA_HOST: database 
+      MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD}'
+    networks:
+      - wordpress-networks
+
+  #WORDPRESS
+  wordpress:
+    depends_on:
+      - database 
+    image: wordpress:6.4.3-apache
+    restart: unless-stopped 
+    ports:
+      - 7880:80
+    env_file: .env
+    environment:
+      WORDPRESS_DB_HOST: database:3306
+      WORDPRESS_DB_NAME: '${MYSQL_DATABASE}'
+      WORDPRESS_DB_USER: '${MYSQL_USER}'
+      WORDPRESS_DB_PASSWORD: '${MYSQL_PASSWORD}'
+    volumes:
+      -  ./:/var/www/html
+    networks:
+      - wordpress-networks
+
+
+volumes:
+  db-data:
+
+networks:
+  wordpress-networks:
+    driver: bridge
